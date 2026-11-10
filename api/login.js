@@ -37,10 +37,32 @@ export default async function handler(req, res) {
     return res.writeHead(503, RESPONSE_HEADERS).end('Authentication is temporarily unavailable');
   }
 
+  // Vercel may forward a production alias to an internal deployment hostname.
+  // Compare Origin with public/forwarded hosts and reject cross-site browser requests.
   const origin = req.headers.origin;
-  const host = req.headers.host;
-  if (origin && origin !== 'https://' + host) {
+  const fetchSite = req.headers['sec-fetch-site'];
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
     return res.writeHead(403, RESPONSE_HEADERS).end('Forbidden');
+  }
+  if (origin) {
+    let originHost;
+    try {
+      const parsedOrigin = new URL(origin);
+      if (parsedOrigin.protocol !== 'https:') throw new Error('Invalid origin protocol');
+      originHost = parsedOrigin.host.toLowerCase();
+    } catch {
+      return res.writeHead(403, RESPONSE_HEADERS).end('Forbidden');
+    }
+    const allowedHosts = new Set([
+      String(req.headers.host || '').toLowerCase(),
+      String(req.headers['x-forwarded-host'] || '').split(',')[0].trim().toLowerCase(),
+      'sahizer-tools.vercel.app',
+      'sahizer-tools-embi.vercel.app',
+      'sahizer-tools-git-main-embi.vercel.app'
+    ]);
+    if (!allowedHosts.has(originHost)) {
+      return res.writeHead(403, RESPONSE_HEADERS).end('Forbidden');
+    }
   }
   const contentType = String(req.headers['content-type'] || '').toLowerCase();
   const size = Number(req.headers['content-length'] || '0');
