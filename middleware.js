@@ -102,34 +102,16 @@ export default async function middleware(request) {
     return next();
   }
 
-  if (path === '/login') {
-    if (request.method === 'GET' || request.method === 'HEAD') {
-      if (await hasSession(request, env)) return redirect('/');
-      return rewrite(new URL('/login.html', request.url));
-    }
-    if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: noStoreHeaders });
-    if (!env) return new Response('Authentication is not configured', { status: 503, headers: noStoreHeaders });
+  // Dedicated Vercel Function handles credential validation, not middleware.
+  if (path === '/api/login') {
+    if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: { ...noStoreHeaders, Allow: 'POST' } });
+    return next();
+  }
 
-    // HTML form-only endpoint. Never include credentials in URLs or logs.
-    const contentType = request.headers.get('content-type') || '';
-    const origin = request.headers.get('origin');
-    const length = Number(request.headers.get('content-length') || '0');
-    if (!contentType.startsWith('application/x-www-form-urlencoded') ||
-        (origin && origin !== url.origin) || length > 4096) return redirect('/login?error=1');
-    try {
-      const form = await request.formData();
-      const username = form.get('username');
-      const password = form.get('password');
-      if (typeof username !== 'string' || typeof password !== 'string' || username.length > 120 || password.length > 256) {
-        return redirect('/login?error=1');
-      }
-      const passMatches = await checkPassword(password, env);
-      if (username !== env.name || !passMatches) return redirect('/login?error=1');
-      const session = await makeSession(env);
-      return redirect('/', loginCookie(session));
-    } catch {
-      return redirect('/login?error=1');
-    }
+  if (path === '/login') {
+    if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Method Not Allowed', { status: 405, headers: noStoreHeaders });
+    if (await hasSession(request, env)) return redirect('/');
+    return rewrite(new URL('/login.html', request.url));
   }
 
   if (path === '/logout') {
