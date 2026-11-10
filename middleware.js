@@ -103,10 +103,7 @@ export default async function middleware(request) {
   }
 
   // Dedicated Vercel Function handles credential validation, not middleware.
-  if (path === '/api/login') {
-    if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: { ...noStoreHeaders, Allow: 'POST' } });
-    return next();
-  }
+  if (path === '/api/login') return next();
 
   if (path === '/login') {
     if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Method Not Allowed', { status: 405, headers: noStoreHeaders });
