@@ -30,7 +30,7 @@ THE SOFTWARE.
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#101c32">
+  <meta name="theme-color" content="#f7f9fc">
   <meta name="description" content="Sınıf ders netlerini YKS özet dosyasına otomatik aktar. Excel içe aktar, sonuçları kontrol et ve Excel dışa aktar.">
   <title>YKS Net Studio — Excel Net Aktarım</title>
   <style>
@@ -41,6 +41,88 @@ THE SOFTWARE.
 @media (max-width:720px){.sidebar{display:none}.topbar{height:65px}.content{padding:32px 19px 50px}.transfer-grid{grid-template-columns:1fr}.upload-card{min-height:unset}.execute-card{flex-wrap:wrap}.execute-buttons{width:100%;justify-content:flex-end}.results-heading{align-items:flex-start;flex-direction:column}.table-toolbar{align-items:stretch;flex-direction:column}.search-box{max-width:300px}.help-grid{grid-template-columns:1fr}.footer{padding:20px;flex-wrap:wrap}.hero h1{letter-spacing:-1.5px}.bottom-export{flex-direction:column;align-items:stretch}.bottom-export button{width:100%}}
 @media (max-width:420px){.content{padding-left:13px;padding-right:13px}.topbar{padding:0 13px}.top-version{display:none}.upload-card{padding:17px}.card-heading p{font-size:11px}.card-heading h2{font-size:14px}.required,.optional{font-size:7px}.steps{gap:6px}.step{font-size:10px}.step-line{width:15px}.stats-grid{gap:9px}.stat-card{padding:14px}.stat-card strong{font-size:24px}.breakdown-grid{gap:8px}.results-heading h2{font-size:24px}.preview-heading,.table-toolbar{padding-left:15px;padding-right:15px}.execute-buttons{gap:8px}.button-primary,.button-ghost{padding:12px 13px}.filter-tab{padding:8px 9px}}
 
+
+/* YKS Net Studio — light theme · all styles, including sidebar & export */
+:root{color-scheme:light;background:#f7f9fc;color:#1e293b}
+body{background:#f7f9fc}
+.sidebar{
+  background:#fff;color:#475569;border-right:1px solid #e3eaf1;
+  box-shadow:4px 0 20px rgba(30,57,79,.025)
+}
+.brand{color:#142940}
+.brand-mark{background:#eaf7f2;border:1px solid #d0e9df;color:#14836c}
+.brand-name small{color:#8394a5}
+.side-section{color:#8b9aab}
+.side-link{color:#526579}
+.side-link:hover{background:#f0f6f4;color:#155b4d}
+.side-link.active{color:#116c57;background:#eaf7f1}
+.side-link.active svg{color:#13896d}
+.side-current{background:#16a47c}
+.private-box{background:#f2faf6;border:1px solid #d8ede2}
+.private-title{color:#18745c}
+.private-box p{color:#647d75}
+.sidebar-bottom{color:#8595a6}
+.topbar{background:#fff;border-bottom:1px solid #e7ecf1}
+.breadcrumbs{color:#65758a}
+.breadcrumbs strong{color:#24384d}
+.content{background:transparent}
+h1{color:#192e45}
+h1 span{color:#148772}
+.hero-description{color:#607286}
+.eyebrow,.success-eyebrow{color:#137b66}
+.step{color:#6f8194}
+.step.active{color:#137c64}
+.step.active b{background:#e7f7ef;border-color:#c0e7d4;color:#137c64}
+.upload-card,.execute-card,.stat-card,.breakdown-item,.preview,.help-item{
+  background:#fff;border-color:#e2e9f0;
+  box-shadow:0 5px 20px rgba(33,57,83,.028)
+}
+.card-heading h2,.execute-text h3,.preview-heading h3,.help-item h3{color:#22384e}
+.card-heading p,.execute-text p,.preview-heading p,.help-item p{color:#66798e}
+.drop-area{background:#f9fbfd;border-color:#bfd5e0}
+.drop-area:hover,.drop-area.dragging{background:#f0faf6;border-color:#3ba98f}
+.drop-area strong{color:#243a50}
+.drop-area p,.target-help{color:#6f8193}
+.upload-icon{background:#e8f4f7;color:#287d9a}
+.card-number{background:#eaf7f2;border-color:#d8eee3;color:#197e66}
+.template-display{background:#f5fbf8;border-color:#daeee4}
+.template-label strong{color:#234e41}
+.template-label small{color:#5b8b7a}
+.text-button,.button-ghost{background:#fff;border-color:#dce5ed;color:#40576d}
+.text-button:hover,.button-ghost:hover{background:#f1faf6;border-color:#a3d8c2;color:#176e59}
+.button-primary,.button-export{
+  background:#128568;border-color:#128568;color:#fff;
+  box-shadow:0 6px 15px rgba(18,133,104,.15)
+}
+.button-primary:not(:disabled):hover,.button-export:not(:disabled):hover{background:#0d7058;border-color:#0d7058}
+.button-primary:disabled{opacity:.5}
+.stat-card strong,.net-value{color:#20394f}
+.stat-card>span,.breakdown-detail,.table-bottom{color:#65788b}
+.preview-count{background:#edf5f2;color:#2e7565}
+.filter-tab{color:#5f7184}
+.filter-tab.selected{background:#e7f6ee;color:#126d55}
+.filter-tab:hover{background:#eff6f3}
+.search-box{background:#fff;border-color:#d9e4ec}
+.search-box input{color:#1e364c}
+thead{background:#f4f8fa}
+th{color:#60758a;border-bottom-color:#e4edf1}
+td{color:#455c70}
+tbody tr:hover{background:#f5faf8}
+.class-cell{color:#233b52}
+.subject-chip{background:#eef5f8;color:#456d80}
+.bottom-export{
+  color:#1b3d35;background:linear-gradient(110deg,#f1fbf5,#e9f8f1);
+  border:1px solid #cfe8d9;box-shadow:0 4px 18px rgba(31,104,77,.04)
+}
+.bottom-export strong{color:#204e3f}
+.bottom-export span{color:#527a6c}
+.bottom-export .button-primary{background:#128568;border-color:#128568;color:#fff}
+.bottom-export .button-primary span{color:#fff}
+.help-item>span{background:#e8f7f0;color:#168367}
+.help-note,.footer{color:#697e91}
+.footer{background:#fff;border-top-color:#e4eaf0}
+::selection{background:#d6f1e6;color:#184b3c}
+@media(max-width:980px){.sidebar{box-shadow:none}}
 </style>
 </head>
 <body>
