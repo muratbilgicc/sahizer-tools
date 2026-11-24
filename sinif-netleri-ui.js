@@ -168,4 +168,6 @@
       exportButton.disabled = !prepared?.changes.length;
     }
   });
+  target.disabled = false;
+  reportInput.disabled = false;
 })();
