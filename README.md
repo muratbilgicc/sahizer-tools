@@ -12,6 +12,12 @@ Import/export web uygulamasi. Kaynak SINIF DERS NETLERI.xlsx dosyasini yukleyin 
 - Gomulu sablon ogrenci netleri icermez.
 - .xlsx 15 MB siniri. Backend gerekmez.
 
+## Sınıf netlerini işle
+
+Ana takip dosyasını ve bir YKS veya LGS raporunu seçin. Raporun Genel İstatistikler sayfasındaki şube ortalamaları, seçilen deneme satırındaki boş ders hücrelerine aktarılır. Birleşik YKS raporunda TYT ve AYT için varsayılan hedef TYT'nin deneme satırıdır. Hedefler ayrı ayrı seçilebilir. Eşleşmeyen şubeler önizlemede listelenir.
+
+İki raporu aynı dosyaya işlemek için ilk aktarımın çıktısını ikinci aktarımda ana takip dosyası olarak seçin.
+
 ## Calistirma
 
 index.html dosyasini bir tarayicida acin.
@@ -28,7 +34,7 @@ Settings > Pages > Deploy from a branch > main / (root) > Save.
 
 ## Lisans
 
-Gomulu JSZip 3.10.1, MIT/GPLv3 lisanslidir; telif bildirimi index.html basindadir.
+Gomulu JSZip 3.10.1, MIT/GPLv3 lisanslidir; telif bildirimi jszip.min.js basindadir.
 
 ## Erişim
 

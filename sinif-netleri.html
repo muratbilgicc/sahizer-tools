@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sınıf Netlerini İşle · YKS Net Studio</title>
+  <style>
+    :root { color-scheme: light; font: 16px/1.55 Inter, system-ui, sans-serif; color: #1e293b; background: #f7f9fc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #126752; font-weight: 650; }
+    header { background: white; border-bottom: 1px solid #dbe5ee; }
+    nav, main { width: min(100% - 32px, 960px); margin-inline: auto; }
+    nav { padding: 18px 0; }
+    main { padding: 42px 0 60px; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(1.9rem, 6vw, 3rem); letter-spacing: -.045em; line-height: 1.15; }
+    h1 + p { margin: 10px 0 28px; color: #4e6177; }
+    h2 { font-size: 1.3rem; }
+    .panel { padding: clamp(16px, 4vw, 28px); border: 1px solid #dbe5ee; border-radius: 16px; background: white; }
+    .files, #trials { display: flex; flex-wrap: wrap; gap: 16px; }
+    .files label, .trial { flex: 1 1 245px; min-width: 0; }
+    label { display: block; font-weight: 700; }
+    input {
+      width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid #a5b7c7;
+      border-radius: 8px; color: inherit; font: inherit; font-weight: 450;
+    }
+    input::file-selector-button { margin-right: 8px; }
+    fieldset { margin: 22px 0 0; padding: 14px 16px; border: 1px solid #dbe5ee; border-radius: 8px; }
+    legend { font-weight: 700; }
+    .hint { margin-top: 6px; font-size: .875rem; color: #4e6177; }
+    button { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 10px 16px; color: white; background: #126752; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: default; }
+    #preview { margin-top: 20px; }
+    #status { margin-top: 12px; }
+    #status[data-error] { color: #a32132; }
+    #results { margin-top: 24px; }
+    .results-heading { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; }
+    ul { padding-left: 20px; }
+    .table-wrap { overflow: auto; max-height: 540px; margin-top: 16px; border: 1px solid #dbe5ee; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: .9rem; }
+    th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid #e5edf3; }
+    th { position: sticky; top: 0; background: #ebf5f1; }
+    td:last-child { font-variant-numeric: tabular-nums; }
+  </style>
+  <script src="jszip.min.js" defer></script>
+  <script src="workbook.js" defer></script>
+  <script src="sinif-netleri-engine.js" defer></script>
+  <script src="sinif-netleri-ui.js" defer></script>
+</head>
+<body>
+  <header><nav><a href="index.html">← YKS Net Studio</a></nav></header>
+  <main>
+    <h1>Sınıf netlerini işle</h1>
+    <p>YKS veya LGS raporundaki şube netlerini takip dosyasına aktar.</p>
+    <form id="transfer" class="panel">
+      <div class="files">
+        <label>Ana takip dosyası
+          <input type="file" id="target" accept=".xlsx" required>
+        </label>
+        <label>YKS veya LGS raporu
+          <input type="file" id="report" accept=".xlsx" required>
+        </label>
+      </div>
+      <fieldset id="trial-fields" hidden>
+        <legend>Hedef deneme satırı</legend>
+        <div id="trials"></div>
+      </fieldset>
+      <button type="submit" id="preview" disabled>Önizle</button>
+      <p class="hint">Dosyalar tarayıcıda işlenir. Araç boş net hücrelerini doldurur.</p>
+      <p id="status" role="status" hidden></p>
+    </form>
+    <section id="results" class="panel" hidden aria-labelledby="results-title">
+      <div class="results-heading">
+        <div>
+          <h2 id="results-title">Aktarım önizlemesi</h2>
+          <p class="hint" id="summary"></p>
+        </div>
+        <button type="button" id="export">Excel’i indir</button>
+      </div>
+      <ul id="warnings" hidden></ul>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Aktarılacak hücreler">
+        <table>
+          <thead><tr><th>Sayfa</th><th>Şube</th><th>Oturum</th><th>Deneme</th><th>Ders</th><th>Hücre</th><th>Net</th></tr></thead>
+          <tbody id="changes"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
