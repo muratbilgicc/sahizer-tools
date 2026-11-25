@@ -5,47 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>YKS / LGS Net Aktarımı · Sahizer Tools</title>
   <link rel="stylesheet" href="tools-nav.css">
+  <link rel="stylesheet" href="transfer-layout.css">
   <style>
-    :root { color-scheme: light; font: 16px/1.55 Inter, system-ui, sans-serif; color: #1e293b; background: #f7f9fc; }
-    * { box-sizing: border-box; }
-    body { margin: 0; }
-    a { color: #126752; font-weight: 650; }
-    main { width: min(100% - 32px, 1120px); margin-inline: auto; }
-    main { padding: 42px 0 60px; }
-    h1, h2, p { margin: 0; }
-    h1 { font-size: clamp(1.9rem, 6vw, 3rem); letter-spacing: -.045em; line-height: 1.15; }
-    h1 + p { margin: 10px 0 28px; color: #4e6177; }
-    h2 { font-size: 1.3rem; }
-    .panel { padding: clamp(16px, 4vw, 28px); border: 1px solid #dbe5ee; border-radius: 16px; background: white; }
-    .files, #trials { display: flex; flex-wrap: wrap; gap: 16px; }
-    .file-field, .trial { flex: 1 1 245px; min-width: 0; }
-    label { display: block; font-weight: 700; }
-    input {
-      width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid #a5b7c7;
-      border-radius: 8px; color: inherit; font: inherit; font-weight: 450;
-    }
-    input::file-selector-button { margin-right: 8px; }
-    fieldset { margin: 22px 0 0; padding: 14px 16px; border: 1px solid #dbe5ee; border-radius: 8px; }
-    legend { font-weight: 700; }
-    .hint { margin-top: 6px; font-size: .875rem; color: #4e6177; }
-    button { font: inherit; font-weight: 700; border: 0; border-radius: 8px; padding: 10px 16px; color: white; background: #126752; cursor: pointer; }
-    button:disabled { opacity: .55; cursor: default; }
-    #preview { margin-top: 20px; }
-    #status { margin-top: 12px; }
-    [data-error] { color: #a32132; }
-    #results { margin-top: 24px; scroll-margin-top: 144px; }
-    #warnings { padding: 12px 12px 12px 30px; border: 1px solid #eedba9; border-radius: 8px; background: #fff9eb; color: #654913; }
-    .results-heading { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; }
-    ul { padding-left: 20px; }
-    .table-wrap { overflow: auto; max-height: 540px; margin-top: 16px; border: 1px solid #dbe5ee; border-radius: 8px; }
-    table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: .9rem; }
-    th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid #e5edf3; }
-    th { position: sticky; top: 0; background: #ebf5f1; }
-    td:last-child { font-variant-numeric: tabular-nums; }
+    .class-transfer .drop-area { width: 100%; color: inherit; text-align: center; }
+    .class-transfer #report-subtitle { margin: 7px 0 12px; color: #6f8193; font-size: 12px; }
+    .class-transfer .drop-area:disabled { opacity: .55; }
+    .class-transfer .report-file-name { overflow-wrap: anywhere; }
+    .class-transfer #trial-fields { min-width: 0; margin: 20px 0 0; padding: 16px 20px 20px; border: 1px solid #dbe5ee; border-radius: 14px; background: #fff; }
+    .class-transfer #trial-fields legend { padding: 0 6px; font-size: .9rem; font-weight: 700; }
+    .class-transfer #trials { display: flex; flex-wrap: wrap; gap: 16px 24px; }
+    .class-transfer .trial { flex: 1 1 205px; min-width: 0; }
+    .class-transfer .trial label { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+    .class-transfer .trial input { width: 75px; padding: 6px 8px; border: 1px solid #a5b7c7; border-radius: 7px; color: inherit; }
+    .class-transfer .trial .hint { margin: 7px 0 0; color: #4e6177; font-size: .78rem; }
+    .class-transfer #results { scroll-margin-top: 154px; }
+    .class-transfer #changes-table { max-height: 505px; overflow: auto; }
+    .class-transfer #changes-table th { position: sticky; top: 0; }
+    .class-transfer #warnings { margin: 16px 0; padding: 12px 12px 12px 32px; }
+    .class-transfer #download-status { margin-top: 10px; font-size: .85rem; }
+    .class-transfer #download-status:empty { display: none; }
+    .class-transfer #download-status[data-error] { color: #a32132; }
+    .class-transfer th:last-child, .class-transfer td:last-child { font-variant-numeric: tabular-nums; }
   </style>
   <script src="jszip.min.js" defer></script>
   <script src="workbook.js" defer></script>
   <script src="sinif-netleri-engine.js" defer></script>
+  <script src="sinif-netleri-sablon.js" defer></script>
   <script src="sinif-netleri-ui.js" defer></script>
 </head>
 <body>
@@ -58,48 +43,97 @@
       </nav>
     </div>
   </header>
-  <main>
-    <h1>YKS / LGS netlerini takip dosyasına işle</h1>
-    <p>Ana Excel’i ve bir sınav raporunu seç. Deneme satırını kontrol et, aktarımı önizle ve güncel Excel’i indir.</p>
+  <main class="content class-transfer">
     <noscript>Excel aktarımı için tarayıcında JavaScript’i etkinleştir.</noscript>
-    <form id="transfer" class="panel">
-      <div class="files">
-        <div class="file-field">
-          <label for="target">Ana takip dosyası</label>
-          <input type="file" id="target" accept=".xlsx" aria-describedby="target-help" required disabled>
-          <p id="target-help" class="hint">Netlerin yazılacağı Sınıf Ders Netleri Excel’i.</p>
-        </div>
-        <div class="file-field">
-          <label for="report">YKS veya LGS raporu</label>
-          <input type="file" id="report" accept=".xlsx" aria-describedby="report-help" required disabled>
-          <p id="report-help" class="hint">Genel İstatistikler sayfasını içeren Excel.</p>
-        </div>
+    <section class="hero">
+      <h1>YKS ve LGS <span>net aktarımı</span></h1>
+      <p class="hero-description">Sınav raporundaki şube netlerini Sınıf Ders Netleri takip dosyasına işle.</p>
+      <div class="steps" aria-label="Aktarım adımları">
+        <span class="step active"><b>1</b> Raporu seç</span><span class="step-line"></span>
+        <span class="step"><b>2</b> Kontrol et</span><span class="step-line"></span>
+        <span class="step"><b>3</b> Excel’i indir</span>
       </div>
+    </section>
+
+    <form id="transfer">
+      <section class="transfer-grid" aria-label="Excel dosyaları">
+        <article class="upload-card">
+          <div class="card-heading">
+            <div><h2>YKS veya LGS raporu</h2><p>Genel İstatistikler sayfasını içeren kaynak Excel</p></div>
+          </div>
+          <input type="file" id="report" accept=".xlsx" hidden disabled>
+          <button type="button" id="report-drop" class="drop-area" disabled>
+            <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
+            <strong id="report-title">Raporu buraya sürükle</strong>
+            <span id="report-subtitle">veya Excel dosyası seç</span>
+            <span class="file-extension">.XLSX <i></i> MAKS. 15 MB</span>
+          </button>
+          <div id="report-info" class="file-summary" hidden>
+            <div class="file-summary-icon" aria-hidden="true">XL</div>
+            <div class="file-meta report-file-name"><strong id="report-filename"></strong><small id="report-type"></small></div>
+            <button type="button" class="icon-button" id="remove-report" aria-label="Raporu kaldır" title="Kaldır">×</button>
+          </div>
+        </article>
+
+        <article class="upload-card target-card">
+          <div class="card-heading">
+            <div><h2>Hedef takip dosyası</h2><p>Netlerin yazılacağı Excel</p></div>
+          </div>
+          <input type="file" id="target" accept=".xlsx" hidden disabled>
+          <div class="template-display">
+            <div class="template-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v6h5M8 13h8M8 17h8"/></svg></div>
+            <span class="template-label"><strong id="target-title">SINIF DERS NETLERİ</strong><small id="target-subtitle">Yerleşik boş şablon seçili</small></span>
+            <span class="template-check" aria-hidden="true">✓</span>
+          </div>
+          <div class="template-actions">
+            <button class="text-button" id="choose-target" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 3h10M6 11v8h12v-8"/></svg> Kendi dosyanı seç
+            </button>
+            <button class="text-button secondary" id="download-template" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg> Şablonu indir
+            </button>
+          </div>
+          <p class="target-help">Önceki denemeleri ve mevcut biçimi korumak için kullandığın takip dosyasını seç.</p>
+          <button id="reset-template" class="reset-template" type="button" hidden>Yerleşik şablona dön</button>
+        </article>
+      </section>
+
       <fieldset id="trial-fields" hidden>
         <legend>Hedef deneme satırı</legend>
         <div id="trials"></div>
       </fieldset>
-      <button type="submit" id="preview" disabled>Aktarımı önizle</button>
-      <p class="hint">Dosyalar tarayıcıda işlenir. Araç boş net hücrelerini doldurur.</p>
-      <p id="status" role="status">Önizleme için iki Excel dosyasını da seç.</p>
-    </form>
-    <section id="results" class="panel" tabindex="-1" hidden aria-labelledby="results-title">
-      <div class="results-heading">
-        <div>
-          <h2 id="results-title">Aktarım önizlemesi</h2>
-          <p class="hint" id="summary"></p>
+
+      <section class="execute-card" aria-label="Aktarım işlemi">
+        <div class="execute-text">
+          <div class="execute-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h13m0 0-4-4m4 4-4 4M20 17H7m0 0 4-4m-4 4 4 4"/></svg></div>
+          <div><h3>Aktarımı hazırla</h3><p id="status" role="status">Başlamak için YKS veya LGS raporunu seç.</p></div>
         </div>
-        <button type="button" id="export">Excel’i indir</button>
+        <div class="execute-buttons">
+          <button type="submit" class="button-primary" id="preview" disabled>Aktarımı önizle <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+      <div class="error-box" id="transfer-error" role="alert" hidden><strong>Aktarım yapılamadı</strong><span id="error-message"></span></div>
+    </form>
+
+    <section id="results" class="results" tabindex="-1" hidden aria-labelledby="results-title">
+      <div class="results-heading">
+        <div><h2 id="results-title">Aktarım önizlemesi</h2><p id="summary"></p></div>
+        <button class="button-export" type="button" id="export">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg> Excel’i indir
+        </button>
       </div>
-      <p id="download-status" class="hint" role="status"></p>
-      <ul id="warnings" hidden></ul>
-      <div id="changes-table" class="table-wrap" tabindex="0" role="region" aria-label="Aktarılacak hücreler">
-        <table>
-          <thead><tr><th>Sayfa</th><th>Şube</th><th>Oturum</th><th>Deneme</th><th>Ders</th><th>Hücre</th><th>Net</th></tr></thead>
-          <tbody id="changes"></tbody>
-        </table>
+      <p id="download-status" role="status"></p>
+      <ul id="warnings" class="warning-box" hidden></ul>
+      <div class="preview" id="changes-table" hidden>
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Aktarılacak hücreler">
+          <table>
+            <thead><tr><th scope="col">Sayfa</th><th scope="col">Şube</th><th scope="col">Oturum</th><th scope="col">Deneme</th><th scope="col">Ders</th><th scope="col">Hücre</th><th scope="col" class="num-col">Net</th></tr></thead>
+            <tbody id="changes"></tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
+  <footer class="footer"><span>Sahizer Tools</span><span>Excel dosyaları tarayıcıda işlenir.</span></footer>
 </body>
 </html>

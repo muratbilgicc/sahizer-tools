@@ -5,12 +5,18 @@
   const get = id => document.getElementById(id);
   const target = get('target');
   const reportInput = get('report');
+  const reportDrop = get('report-drop');
+  const targetPicker = get('choose-target');
+  const templateDownload = get('download-template');
+  const templateReset = get('reset-template');
   const trialFields = get('trial-fields');
   const trials = get('trials');
   const preview = get('preview');
   const results = get('results');
   const exportButton = get('export');
   const status = get('status');
+  const errorBox = get('transfer-error');
+  const workbookType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   const downloadStatus = get('download-status');
   const format = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 6 });
   let report = null;
@@ -20,9 +26,17 @@
   let exporting = false;
 
   function message(value, error = false) {
-    status.textContent = value;
-    status.hidden = !value;
-    status.toggleAttribute('data-error', error);
+    status.textContent = error ? 'Dosyanı kontrol edip tekrar deneyebilirsin.' : value;
+    get('error-message').textContent = error ? value : '';
+    errorBox.hidden = !error;
+  }
+
+  function setStep(number) {
+    document.querySelectorAll('.step').forEach((step, index) => {
+      step.classList.toggle('active', index <= number);
+      if (index === number) step.setAttribute('aria-current', 'step');
+      else step.removeAttribute('aria-current');
+    });
   }
 
   function invalidate() {
@@ -31,18 +45,13 @@
     results.hidden = true;
     downloadStatus.textContent = '';
     downloadStatus.removeAttribute('data-error');
-    preview.disabled = !report || !target.files.length;
+    preview.disabled = !report;
+    setStep(0);
   }
 
   function showReadiness() {
-    if (!report) {
-      message(target.files.length ? 'Şimdi YKS veya LGS raporunu seç.' : 'Önizleme için iki Excel dosyasını da seç.');
-      return;
-    }
-    const type = report.sessions.join(' / ');
-    message(target.files.length
-      ? `${type} raporu hazır. Hedef deneme satırını kontrol edip aktarımı önizle.`
-      : `${type} raporu hazır. Ana takip dosyasını seç.`);
+    message(report ? `${report.sessions.join(' / ')} raporu hazır. Deneme satırını kontrol edip aktarımı önizle.`
+      : 'Başlamak için YKS veya LGS raporunu seç.');
   }
 
   function showTrialInputs(data) {
@@ -75,34 +84,84 @@
     trialFields.hidden = false;
   }
 
-  reportInput.addEventListener('change', async () => {
+  function showReport(file, detail) {
+    get('report-info').hidden = !file;
+    get('report-filename').textContent = file?.name || '';
+    get('report-type').textContent = detail;
+    reportDrop.classList.toggle('has-file', Boolean(report));
+    get('report-title').textContent = report ? 'Rapor seçildi' : 'Raporu buraya sürükle';
+    get('report-subtitle').textContent = report ? 'Değiştirmek için tıkla veya sürükle' : 'veya Excel dosyası seç';
+  }
+
+  async function chooseReport(file) {
     const request = ++reportRevision;
     report = null;
     invalidate();
     trials.replaceChildren();
     trialFields.hidden = true;
-    const file = reportInput.files[0];
+    showReport(file, file ? 'Okunuyor…' : '');
     if (!file) {
       showReadiness();
       return;
     }
     message('Rapor okunuyor…');
     try {
+      if (!/\.xlsx$/i.test(file.name)) throw new Error('Lütfen .xlsx uzantılı bir rapor seç.');
       const data = await engine.readReport(await file.arrayBuffer());
       if (request !== reportRevision) return;
       report = data;
+      showReport(file, data.sessions.join(' / ') + ' · ' + data.classes.size + ' şube');
       showTrialInputs(data);
       invalidate();
       showReadiness();
     } catch (error) {
-      if (request === reportRevision) message(error.message, true);
+      if (request !== reportRevision) return;
+      showReport(file, 'Rapor okunamadı');
+      message(error.message, true);
     }
+  }
+
+  reportInput.addEventListener('change', () => {
+    if (reportInput.files.length) chooseReport(reportInput.files[0]);
+  });
+  reportDrop.addEventListener('click', () => reportInput.click());
+  for (const type of ['dragenter', 'dragover', 'dragleave', 'drop']) {
+    reportDrop.addEventListener(type, event => {
+      event.preventDefault();
+      reportDrop.classList.toggle('dragging', type === 'dragenter' || type === 'dragover');
+      if (type === 'drop' && event.dataTransfer?.files.length) {
+        reportInput.value = '';
+        chooseReport(event.dataTransfer.files[0]);
+      }
+    });
+  }
+  get('remove-report').addEventListener('click', () => {
+    reportInput.value = '';
+    chooseReport(null);
+    reportDrop.focus();
   });
 
-  target.addEventListener('change', () => {
+  function updateTarget() {
+    const file = target.files[0];
+    get('target-title').textContent = file?.name || 'SINIF DERS NETLERİ';
+    get('target-subtitle').textContent = file ? 'Kendi takip dosyan seçili' : 'Yerleşik boş şablon seçili';
+    templateReset.hidden = !file;
     invalidate();
-    if (report || !reportInput.files.length) showReadiness();
+    if (report || errorBox.hidden) showReadiness();
+  }
+
+  targetPicker.addEventListener('click', () => target.click());
+  target.addEventListener('change', updateTarget);
+  templateReset.addEventListener('click', () => {
+    target.value = '';
+    updateTarget();
+    targetPicker.focus();
   });
+  templateDownload.addEventListener('click', () => {
+    const blob = new Blob([window.SinifNetleriTemplate()], { type: workbookType });
+    download(blob, 'SINIF DERS NETLERİ - Şablon.xlsx');
+  });
+
   trials.addEventListener('input', () => {
     invalidate();
     showReadiness();
@@ -143,7 +202,7 @@
 
   get('transfer').addEventListener('submit', async event => {
     event.preventDefault();
-    if (!report || !target.files[0]) return;
+    if (!report) return;
     invalidate();
     const request = revision;
     const currentReport = report;
@@ -151,11 +210,15 @@
     preview.disabled = true;
     message('Önizleme hazırlanıyor…');
     try {
-      const data = await engine.prepare(await target.files[0].arrayBuffer(), currentReport, selected);
+      const file = target.files[0];
+      if (file && !/\.xlsx$/i.test(file.name)) throw new Error('Lütfen .xlsx uzantılı bir takip dosyası seç.');
+      const targetBytes = file ? await file.arrayBuffer() : window.SinifNetleriTemplate();
+      const data = await engine.prepare(targetBytes, currentReport, selected);
       if (request !== revision) return;
       prepared = data;
       render(data);
       message('Önizleme hazır.');
+      setStep(1);
       results.focus({ preventScroll: true });
       results.scrollIntoView({ block: 'start' });
     } catch (error) {
@@ -165,10 +228,21 @@
     }
   });
 
+  function download(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
   exportButton.addEventListener('click', async () => {
     if (!prepared || exporting) return;
     const current = prepared;
-    const filename = target.files[0].name.replace(/\.xlsx$/i, '') + ' - Güncel.xlsx';
+    const filename = (target.files[0]?.name.replace(/\.xlsx$/i, '') || 'SINIF DERS NETLERİ') + ' - Güncel.xlsx';
     exporting = true;
     exportButton.disabled = true;
     downloadStatus.removeAttribute('data-error');
@@ -176,14 +250,8 @@
     try {
       const blob = await current.generate();
       if (prepared !== current) return;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      download(blob, filename);
+      setStep(2);
       downloadStatus.textContent = 'Güncel Excel indirildi.';
     } catch (error) {
       if (prepared === current) {
@@ -195,6 +263,6 @@
       exportButton.disabled = !prepared?.changes.length;
     }
   });
-  target.disabled = false;
-  reportInput.disabled = false;
+  for (const control of [target, reportInput, reportDrop, targetPicker, templateDownload]) control.disabled = false;
+  setStep(0);
 })();
