@@ -107,24 +107,31 @@
     return { rows, classLabels };
   }
 
-  async function prepare(targetBytes, report, trials) {
-    for (const session of report.sessions) {
-      if (!Number.isInteger(trials[session]) || trials[session] < 1) {
-        throw new AktarimHatasi(`${session} için hedef deneme numarasını gir.`);
+  async function prepare(targetBytes, reports, trials) {
+    const sources = new Map();
+    const matched = new Map();
+    for (const report of Array.isArray(reports) ? reports : [reports]) {
+      matched.set(report, new Set());
+      for (const session of report.sessions) {
+        if (sources.has(session)) throw new AktarimHatasi(`${session} için birden fazla rapor seçildi.`);
+        if (!Number.isInteger(trials[session]) || trials[session] < 1) {
+          throw new AktarimHatasi(`${session} için hedef deneme numarasını gir.`);
+        }
+        sources.set(session, report);
       }
     }
+    if (!sources.size) throw new AktarimHatasi('Aktarım için en az bir rapor seç.');
 
     const target = await loadWorkbook(targetBytes);
     const changes = [];
     const missingRows = [];
     const missingClasses = [];
-    const matched = new Set();
     const patches = new Map();
     let preserved = 0;
     let empty = 0;
 
     for (const [name, sessions] of Object.entries(groups)) {
-      const active = report.sessions.filter(session => sessions[session]);
+      const active = Object.keys(sessions).filter(session => sources.has(session));
       if (!active.length) continue;
       const sheet = target.sheets[name];
       if (!sheet || normalize(sheet.cells.get('A3')) !== 'SINIF') {
@@ -137,6 +144,7 @@
       const updates = new Map();
 
       for (const session of active) {
+        const report = sources.get(session);
         const subjects = sessions[session].map(([label, heading]) => {
           const sourceColumn = report.columns.get(normalize(heading));
           const targetColumn = columns.get(normalize(label));
@@ -150,7 +158,7 @@
             if (!missingClasses.includes(label)) missingClasses.push(label);
             continue;
           }
-          matched.add(key);
+          matched.get(report).add(key);
           const trial = trials[session];
           const row = rows.get(key + '|' + trial);
           if (!row) {
@@ -177,7 +185,8 @@
       if (updates.size) patches.set(sheet.path, patchSheetXml(sheet.xml, updates, name));
     }
 
-    const unmatched = [...report.classes].filter(([key]) => !matched.has(key)).map(([, entry]) => entry.label);
+    const unmatched = [...matched].flatMap(([report, keys]) =>
+      [...report.classes].filter(([key]) => !keys.has(key)).map(([, entry]) => entry.label));
     return { changes, preserved, empty, unmatched, missingRows, missingClasses, generate: () => exportWorkbook(target, patches) };
   }
 

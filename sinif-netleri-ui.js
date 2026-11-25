@@ -19,10 +19,11 @@
   const workbookType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   const downloadStatus = get('download-status');
   const format = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 6 });
-  let report = null;
+  const reports = new Map();
+  const kinds = ['YKS', 'LGS'];
+  let loadingReports = false;
   let prepared = null;
   let revision = 0;
-  let reportRevision = 0;
   let exporting = false;
 
   function message(value, error = false) {
@@ -45,16 +46,17 @@
     results.hidden = true;
     downloadStatus.textContent = '';
     downloadStatus.removeAttribute('data-error');
-    preview.disabled = !report;
+    preview.disabled = loadingReports || reports.size === 0;
     setStep(0);
   }
 
   function showReadiness() {
-    message(report ? `${report.sessions.join(' / ')} raporu hazır. Deneme satırını kontrol edip aktarımı önizle.`
-      : 'Başlamak için YKS veya LGS raporunu seç.');
+    const types = kinds.filter(kind => reports.has(kind));
+    message(types.length ? `${types.join(' ve ')} ${types.length === 1 ? 'raporu' : 'raporları'} hazır. Deneme satırlarını kontrol edip aktarımı önizle.`
+      : 'Başlamak için bir YKS veya LGS raporu seç.');
   }
 
-  function showTrialInputs(data) {
+  function appendTrialInputs(data, values) {
     for (const session of data.sessions) {
       const wrapper = document.createElement('div');
       wrapper.className = 'trial';
@@ -70,7 +72,8 @@
       input.required = true;
       const number = data.numbers[session];
       const pairedTytNumber = session === 'AYT' && data.sessions.includes('TYT') ? data.numbers.TYT : null;
-      if (pairedTytNumber || number) input.value = pairedTytNumber || number;
+      const value = values.get(session) ?? (pairedTytNumber || number);
+      if (value !== null) input.value = value;
       const hint = document.createElement('p');
       hint.className = 'hint';
       hint.id = 'hint-' + session;
@@ -81,65 +84,93 @@
       wrapper.append(label, hint);
       trials.append(wrapper);
     }
-    trialFields.hidden = false;
   }
 
-  function showReport(file, detail) {
-    get('report-info').hidden = !file;
-    get('report-filename').textContent = file?.name || '';
-    get('report-type').textContent = detail;
-    reportDrop.classList.toggle('has-file', Boolean(report));
-    get('report-title').textContent = report ? 'Rapor seçildi' : 'Raporu buraya sürükle';
-    get('report-subtitle').textContent = report ? 'Değiştirmek için tıkla veya sürükle' : 'veya Excel dosyası seç';
-  }
-
-  async function chooseReport(file) {
-    const request = ++reportRevision;
-    report = null;
-    invalidate();
+  function renderReports(replaced) {
+    const values = new Map([...trials.querySelectorAll('input')].map(input => [input.name, input.value]));
     trials.replaceChildren();
-    trialFields.hidden = true;
-    showReport(file, file ? 'Okunuyor…' : '');
-    if (!file) {
-      showReadiness();
+    const list = get('report-list');
+    list.replaceChildren();
+    for (const kind of kinds) {
+      const entry = reports.get(kind);
+      if (!entry) continue;
+      const row = get('report-row').content.cloneNode(true);
+      row.querySelector('strong').textContent = entry.file.name;
+      row.querySelector('small').textContent = `${kind} · ${entry.data.classes.size} şube`;
+      const remove = row.querySelector('button');
+      remove.setAttribute('aria-label', `${kind} raporunu kaldır`);
+      remove.addEventListener('click', () => {
+        if (loadingReports) return;
+        reports.delete(kind);
+        renderReports(new Set());
+        invalidate();
+        showReadiness();
+        reportDrop.focus();
+      });
+      list.append(row);
+      appendTrialInputs(entry.data, replaced.has(kind) ? new Map() : values);
+    }
+    trialFields.hidden = reports.size === 0;
+    reportDrop.classList.toggle('has-file', reports.size > 0);
+    get('report-title').textContent = reports.size === 2 ? 'İki rapor da seçili'
+      : reports.size === 1 ? 'Diğer raporu da ekleyebilirsin' : 'Raporları buraya sürükle';
+    get('report-subtitle').textContent = reports.size === 2 ? 'Değiştirmek için yükle veya sürükle'
+      : 'veya Excel dosyalarını seç';
+  }
+
+  function setLoading(loading) {
+    loadingReports = loading;
+    reportDrop.disabled = loading;
+    reportInput.disabled = loading;
+    get('report-list').querySelectorAll('button').forEach(button => { button.disabled = loading; });
+    preview.disabled = loading || reports.size === 0;
+  }
+
+  async function chooseReports(files) {
+    if (loadingReports || !files.length) return;
+    if (files.length > 2) {
+      message('Bir YKS ve bir LGS raporu seç. En fazla iki dosya ekleyebilirsin.', true);
       return;
     }
-    message('Rapor okunuyor…');
+    setLoading(true);
+    invalidate();
+    message(files.length === 1 ? 'Rapor okunuyor…' : 'Raporlar okunuyor…');
     try {
-      if (!/\.xlsx$/i.test(file.name)) throw new Error('Lütfen .xlsx uzantılı bir rapor seç.');
-      const data = await engine.readReport(await file.arrayBuffer());
-      if (request !== reportRevision) return;
-      report = data;
-      showReport(file, data.sessions.join(' / ') + ' · ' + data.classes.size + ' şube');
-      showTrialInputs(data);
-      invalidate();
+      const selected = await Promise.all(files.map(async file => {
+        try {
+          if (!/\.xlsx$/i.test(file.name)) throw new Error('Lütfen .xlsx uzantılı bir rapor seç.');
+          const data = await engine.readReport(await file.arrayBuffer());
+          const kind = data.sessions.includes('LGS') ? 'LGS' : 'YKS';
+          return [kind, { file, data }];
+        } catch (error) {
+          throw new Error(`${file.name} — ${error.message}`);
+        }
+      }));
+      const replaced = new Set(selected.map(([kind]) => kind));
+      if (replaced.size !== selected.length) throw new Error('Aynı türden iki rapor seçildi. Bir YKS ve bir LGS raporu ekleyebilirsin.');
+      for (const [kind, entry] of selected) reports.set(kind, entry);
+      renderReports(replaced);
       showReadiness();
     } catch (error) {
-      if (request !== reportRevision) return;
-      showReport(file, 'Rapor okunamadı');
       message(error.message, true);
+    } finally {
+      setLoading(false);
     }
   }
 
   reportInput.addEventListener('change', () => {
-    if (reportInput.files.length) chooseReport(reportInput.files[0]);
+    const files = Array.from(reportInput.files);
+    reportInput.value = '';
+    chooseReports(files);
   });
   reportDrop.addEventListener('click', () => reportInput.click());
   for (const type of ['dragenter', 'dragover', 'dragleave', 'drop']) {
     reportDrop.addEventListener(type, event => {
       event.preventDefault();
       reportDrop.classList.toggle('dragging', type === 'dragenter' || type === 'dragover');
-      if (type === 'drop' && event.dataTransfer?.files.length) {
-        reportInput.value = '';
-        chooseReport(event.dataTransfer.files[0]);
-      }
+      if (type === 'drop' && event.dataTransfer?.files.length) chooseReports(Array.from(event.dataTransfer.files));
     });
   }
-  get('remove-report').addEventListener('click', () => {
-    reportInput.value = '';
-    chooseReport(null);
-    reportDrop.focus();
-  });
 
   function updateTarget() {
     const file = target.files[0];
@@ -147,7 +178,7 @@
     get('target-subtitle').textContent = file ? 'Kendi takip dosyan seçili' : 'Yerleşik boş şablon seçili';
     templateReset.hidden = !file;
     invalidate();
-    if (report || errorBox.hidden) showReadiness();
+    if (!loadingReports && errorBox.hidden) showReadiness();
   }
 
   targetPicker.addEventListener('click', () => target.click());
@@ -164,7 +195,7 @@
 
   trials.addEventListener('input', () => {
     invalidate();
-    showReadiness();
+    if (!loadingReports) showReadiness();
   });
 
   function render(data) {
@@ -202,10 +233,10 @@
 
   get('transfer').addEventListener('submit', async event => {
     event.preventDefault();
-    if (!report) return;
+    if (loadingReports || !reports.size) return;
     invalidate();
     const request = revision;
-    const currentReport = report;
+    const currentReports = kinds.filter(kind => reports.has(kind)).map(kind => reports.get(kind).data);
     const selected = Object.fromEntries([...trials.querySelectorAll('input')].map(input => [input.name, input.valueAsNumber]));
     preview.disabled = true;
     message('Önizleme hazırlanıyor…');
@@ -213,7 +244,7 @@
       const file = target.files[0];
       if (file && !/\.xlsx$/i.test(file.name)) throw new Error('Lütfen .xlsx uzantılı bir takip dosyası seç.');
       const targetBytes = file ? await file.arrayBuffer() : window.SinifNetleriTemplate();
-      const data = await engine.prepare(targetBytes, currentReport, selected);
+      const data = await engine.prepare(targetBytes, currentReports, selected);
       if (request !== revision) return;
       prepared = data;
       render(data);

@@ -49,7 +49,7 @@
       <h1>YKS ve LGS <span>net aktarımı</span></h1>
       <p class="hero-description">Sınav raporundaki şube netlerini Sınıf Ders Netleri takip dosyasına işle.</p>
       <div class="steps" aria-label="Aktarım adımları">
-        <span class="step active"><b>1</b> Raporu seç</span><span class="step-line"></span>
+        <span class="step active"><b>1</b> Raporları seç</span><span class="step-line"></span>
         <span class="step"><b>2</b> Kontrol et</span><span class="step-line"></span>
         <span class="step"><b>3</b> Excel’i indir</span>
       </div>
@@ -59,20 +59,23 @@
       <section class="transfer-grid" aria-label="Excel dosyaları">
         <article class="upload-card">
           <div class="card-heading">
-            <div><h2>YKS veya LGS raporu</h2><p>Genel İstatistikler sayfasını içeren kaynak Excel</p></div>
+            <div><h2>YKS ve LGS raporları</h2><p>Her türden bir Excel ekleyebilirsin.</p></div>
           </div>
-          <input type="file" id="report" accept=".xlsx" hidden disabled>
+          <input type="file" id="report" accept=".xlsx" multiple hidden disabled>
           <button type="button" id="report-drop" class="drop-area" disabled>
             <span class="upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4-4 4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
-            <strong id="report-title">Raporu buraya sürükle</strong>
-            <span id="report-subtitle">veya Excel dosyası seç</span>
-            <span class="file-extension">.XLSX <i></i> MAKS. 15 MB</span>
+            <strong id="report-title">Raporları buraya sürükle</strong>
+            <span id="report-subtitle">veya Excel dosyalarını seç</span>
+            <span class="file-extension">.XLSX <i></i> DOSYA BAŞINA 15 MB</span>
           </button>
-          <div id="report-info" class="file-summary" hidden>
-            <div class="file-summary-icon" aria-hidden="true">XL</div>
-            <div class="file-meta report-file-name"><strong id="report-filename"></strong><small id="report-type"></small></div>
-            <button type="button" class="icon-button" id="remove-report" aria-label="Raporu kaldır" title="Kaldır">×</button>
-          </div>
+          <div id="report-list" aria-label="Seçili raporlar"></div>
+          <template id="report-row">
+            <div class="file-summary">
+              <div class="file-summary-icon" aria-hidden="true">XL</div>
+              <div class="file-meta report-file-name"><strong></strong><small></small></div>
+              <button type="button" class="icon-button" title="Kaldır">×</button>
+            </div>
+          </template>
         </article>
 
         <article class="upload-card target-card">
@@ -106,7 +109,7 @@
       <section class="execute-card" aria-label="Aktarım işlemi">
         <div class="execute-text">
           <div class="execute-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h13m0 0-4-4m4 4-4 4M20 17H7m0 0 4-4m-4 4 4 4"/></svg></div>
-          <div><h3>Aktarımı hazırla</h3><p id="status" role="status">Başlamak için YKS veya LGS raporunu seç.</p></div>
+          <div><h3>Aktarımı hazırla</h3><p id="status" role="status">Başlamak için bir YKS veya LGS raporu seç.</p></div>
         </div>
         <div class="execute-buttons">
           <button type="submit" class="button-primary" id="preview" disabled>Aktarımı önizle <span aria-hidden="true">→</span></button>

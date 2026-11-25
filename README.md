@@ -14,9 +14,9 @@ Import/export web uygulamasi. Kaynak SINIF DERS NETLERI.xlsx dosyasini yukleyin 
 
 ## Sınıf netlerini işle
 
-Bir YKS veya LGS raporu seçin. Yerleşik boş takip şablonu varsayılan hedeftir ve ayrıca indirilebilir. Önceki denemeleri korumak için kendi takip dosyanızı hedef olarak seçin. Raporun Genel İstatistikler sayfasındaki şube ortalamaları, seçilen deneme satırındaki boş ders hücrelerine aktarılır. Birleşik YKS raporunda TYT ve AYT için varsayılan hedef TYT'nin deneme satırıdır. Hedefler ayrı ayrı seçilebilir. Eşleşmeyen şubeler önizlemede listelenir.
+YKS ve LGS raporlarını birlikte seçin veya aynı alana sürükleyin. Tek raporla da aktarım yapılabilir. Yerleşik boş takip şablonu varsayılan hedeftir ve ayrıca indirilebilir. Önceki denemeleri korumak için kendi takip dosyanızı hedef olarak seçin. Raporun Genel İstatistikler sayfasındaki şube ortalamaları, seçilen deneme satırındaki boş ders hücrelerine aktarılır. Birleşik YKS raporunda TYT ve AYT için varsayılan hedef TYT'nin deneme satırıdır. Hedefler ayrı ayrı seçilebilir. Eşleşmeyen şubeler önizlemede listelenir.
 
-İki raporu aynı dosyaya işlemek için ilk aktarımın çıktısını ikinci aktarımda ana takip dosyası olarak seçin.
+İki rapor seçildiğinde sonuçlar tek Excel dosyasına yazılır.
 
 ## Calistirma
 
