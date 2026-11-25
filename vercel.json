@@ -6,10 +6,7 @@
   "headers": [
     {
       "source": "/(.*)",
-      "rewrites": [
-    { "source": "/sinif-netleri", "destination": "/sinif-netleri.html" }
-  ],
-  "headers": [
+      "headers": [
         {
           "key": "X-Frame-Options",
           "value": "DENY"
