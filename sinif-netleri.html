@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sınıf Netlerini İşle · YKS Net Studio</title>
+  <title>YKS / LGS Net Aktarımı · Sahizer Tools</title>
+  <link rel="stylesheet" href="tools-nav.css">
   <style>
     :root { color-scheme: light; font: 16px/1.55 Inter, system-ui, sans-serif; color: #1e293b; background: #f7f9fc; }
     * { box-sizing: border-box; }
     body { margin: 0; }
     a { color: #126752; font-weight: 650; }
-    header { background: white; border-bottom: 1px solid #dbe5ee; }
-    nav, main { width: min(100% - 32px, 960px); margin-inline: auto; }
-    nav { padding: 18px 0; }
+    main { width: min(100% - 32px, 1120px); margin-inline: auto; }
     main { padding: 42px 0 60px; }
     h1, h2, p { margin: 0; }
     h1 { font-size: clamp(1.9rem, 6vw, 3rem); letter-spacing: -.045em; line-height: 1.15; }
@@ -19,7 +18,7 @@
     h2 { font-size: 1.3rem; }
     .panel { padding: clamp(16px, 4vw, 28px); border: 1px solid #dbe5ee; border-radius: 16px; background: white; }
     .files, #trials { display: flex; flex-wrap: wrap; gap: 16px; }
-    .files label, .trial { flex: 1 1 245px; min-width: 0; }
+    .file-field, .trial { flex: 1 1 245px; min-width: 0; }
     label { display: block; font-weight: 700; }
     input {
       width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid #a5b7c7;
@@ -33,8 +32,9 @@
     button:disabled { opacity: .55; cursor: default; }
     #preview { margin-top: 20px; }
     #status { margin-top: 12px; }
-    #status[data-error] { color: #a32132; }
-    #results { margin-top: 24px; }
+    [data-error] { color: #a32132; }
+    #results { margin-top: 24px; scroll-margin-top: 144px; }
+    #warnings { padding: 12px 12px 12px 30px; border: 1px solid #eedba9; border-radius: 8px; background: #fff9eb; color: #654913; }
     .results-heading { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 12px; }
     ul { padding-left: 20px; }
     .table-wrap { overflow: auto; max-height: 540px; margin-top: 16px; border: 1px solid #dbe5ee; border-radius: 8px; }
@@ -49,28 +49,41 @@
   <script src="sinif-netleri-ui.js" defer></script>
 </head>
 <body>
-  <header><nav><a href="index.html">← YKS Net Studio</a></nav></header>
+  <header class="tool-header">
+    <div class="tool-header-inner">
+      <a class="tool-brand" href="index.html">Sahizer Tools</a>
+      <nav class="tool-nav" aria-label="Araçlar">
+        <a href="index.html"><span>YKS Ders Tablosu</span><small>Takip dosyası → YKS tablosu</small></a>
+        <a href="sinif-netleri.html" aria-current="page"><span>YKS / LGS Net Aktarımı</span><small>Sınav raporu → takip dosyası</small></a>
+      </nav>
+    </div>
+  </header>
   <main>
-    <h1>Sınıf netlerini işle</h1>
-    <p>YKS veya LGS raporundaki şube netlerini takip dosyasına aktar.</p>
+    <h1>YKS / LGS netlerini takip dosyasına işle</h1>
+    <p>Ana Excel’i ve bir sınav raporunu seç. Deneme satırını kontrol et, aktarımı önizle ve güncel Excel’i indir.</p>
+    <noscript>Excel aktarımı için tarayıcında JavaScript’i etkinleştir.</noscript>
     <form id="transfer" class="panel">
       <div class="files">
-        <label>Ana takip dosyası
-          <input type="file" id="target" accept=".xlsx" required disabled>
-        </label>
-        <label>YKS veya LGS raporu
-          <input type="file" id="report" accept=".xlsx" required disabled>
-        </label>
+        <div class="file-field">
+          <label for="target">Ana takip dosyası</label>
+          <input type="file" id="target" accept=".xlsx" aria-describedby="target-help" required disabled>
+          <p id="target-help" class="hint">Netlerin yazılacağı Sınıf Ders Netleri Excel’i.</p>
+        </div>
+        <div class="file-field">
+          <label for="report">YKS veya LGS raporu</label>
+          <input type="file" id="report" accept=".xlsx" aria-describedby="report-help" required disabled>
+          <p id="report-help" class="hint">Genel İstatistikler sayfasını içeren Excel.</p>
+        </div>
       </div>
       <fieldset id="trial-fields" hidden>
         <legend>Hedef deneme satırı</legend>
         <div id="trials"></div>
       </fieldset>
-      <button type="submit" id="preview" disabled>Önizle</button>
+      <button type="submit" id="preview" disabled>Aktarımı önizle</button>
       <p class="hint">Dosyalar tarayıcıda işlenir. Araç boş net hücrelerini doldurur.</p>
-      <p id="status" role="status" hidden></p>
+      <p id="status" role="status">Önizleme için iki Excel dosyasını da seç.</p>
     </form>
-    <section id="results" class="panel" hidden aria-labelledby="results-title">
+    <section id="results" class="panel" tabindex="-1" hidden aria-labelledby="results-title">
       <div class="results-heading">
         <div>
           <h2 id="results-title">Aktarım önizlemesi</h2>
@@ -78,8 +91,9 @@
         </div>
         <button type="button" id="export">Excel’i indir</button>
       </div>
+      <p id="download-status" class="hint" role="status"></p>
       <ul id="warnings" hidden></ul>
-      <div class="table-wrap" tabindex="0" role="region" aria-label="Aktarılacak hücreler">
+      <div id="changes-table" class="table-wrap" tabindex="0" role="region" aria-label="Aktarılacak hücreler">
         <table>
           <thead><tr><th>Sayfa</th><th>Şube</th><th>Oturum</th><th>Deneme</th><th>Ders</th><th>Hücre</th><th>Net</th></tr></thead>
           <tbody id="changes"></tbody>

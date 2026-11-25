@@ -11,6 +11,7 @@
   const results = get('results');
   const exportButton = get('export');
   const status = get('status');
+  const downloadStatus = get('download-status');
   const format = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 6 });
   let report = null;
   let prepared = null;
@@ -28,7 +29,20 @@
     revision++;
     prepared = null;
     results.hidden = true;
+    downloadStatus.textContent = '';
+    downloadStatus.removeAttribute('data-error');
     preview.disabled = !report || !target.files.length;
+  }
+
+  function showReadiness() {
+    if (!report) {
+      message(target.files.length ? 'Şimdi YKS veya LGS raporunu seç.' : 'Önizleme için iki Excel dosyasını da seç.');
+      return;
+    }
+    const type = report.sessions.join(' / ');
+    message(target.files.length
+      ? `${type} raporu hazır. Hedef deneme satırını kontrol edip aktarımı önizle.`
+      : `${type} raporu hazır. Ana takip dosyasını seç.`);
   }
 
   function showTrialInputs(data) {
@@ -68,15 +82,18 @@
     trials.replaceChildren();
     trialFields.hidden = true;
     const file = reportInput.files[0];
-    message(file ? 'Rapor okunuyor…' : '');
-    if (!file) return;
+    if (!file) {
+      showReadiness();
+      return;
+    }
+    message('Rapor okunuyor…');
     try {
       const data = await engine.readReport(await file.arrayBuffer());
       if (request !== reportRevision) return;
       report = data;
       showTrialInputs(data);
       invalidate();
-      message('');
+      showReadiness();
     } catch (error) {
       if (request === reportRevision) message(error.message, true);
     }
@@ -84,11 +101,11 @@
 
   target.addEventListener('change', () => {
     invalidate();
-    if (report) message('');
+    if (report || !reportInput.files.length) showReadiness();
   });
   trials.addEventListener('input', () => {
     invalidate();
-    message('');
+    showReadiness();
   });
 
   function render(data) {
@@ -118,6 +135,8 @@
       rows.append(row);
     }
     get('changes').replaceChildren(rows);
+    get('changes-table').hidden = !data.changes.length;
+    if (!data.changes.length) downloadStatus.textContent = 'Bu seçimde doldurulacak boş hücre bulunamadı.';
     exportButton.disabled = exporting || !data.changes.length;
     results.hidden = false;
   }
@@ -136,7 +155,9 @@
       if (request !== revision) return;
       prepared = data;
       render(data);
-      message('');
+      message('Önizleme hazır.');
+      results.focus({ preventScroll: true });
+      results.scrollIntoView({ block: 'start' });
     } catch (error) {
       if (request === revision) message(error.message, true);
     } finally {
@@ -150,6 +171,8 @@
     const filename = target.files[0].name.replace(/\.xlsx$/i, '') + ' - Güncel.xlsx';
     exporting = true;
     exportButton.disabled = true;
+    downloadStatus.removeAttribute('data-error');
+    downloadStatus.textContent = 'Excel hazırlanıyor…';
     try {
       const blob = await current.generate();
       if (prepared !== current) return;
@@ -161,8 +184,12 @@
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
+      downloadStatus.textContent = 'Güncel Excel indirildi.';
     } catch (error) {
-      if (prepared === current) message(error.message, true);
+      if (prepared === current) {
+        downloadStatus.setAttribute('data-error', '');
+        downloadStatus.textContent = 'Excel indirilemedi. ' + error.message;
+      }
     } finally {
       exporting = false;
       exportButton.disabled = !prepared?.changes.length;

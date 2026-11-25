@@ -1,9 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/sinif-netleri", "destination": "/sinif-netleri.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
-      "headers": [
+      "rewrites": [
+    { "source": "/sinif-netleri", "destination": "/sinif-netleri.html" }
+  ],
+  "headers": [
         {
           "key": "X-Frame-Options",
           "value": "DENY"
